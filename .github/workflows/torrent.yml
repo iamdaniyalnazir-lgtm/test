@@ -4,29 +4,33 @@ on:
   workflow_dispatch:
     inputs:
       download_url:
-        description: 'Direct Download Link (e.g. Archive.org link)'
+        description: 'Direct Download Link'
         required: true
         default: ''
       file_name:
         description: 'Saved File Name (e.g. game.zip)'
         required: true
         default: 'downloaded_file.zip'
-      
+
 jobs:
   create:
     runs-on: ubuntu-latest
     steps:
       - name: Install mktorrent
-        run: sudo apt-get install mktorrent
-        
-      - name: Download file
-        run: wget -nv -O "$file_name" "$url"
-        
-      - name: Create torrent using mktorrent
-        run: mktorrent -c "$comment" -l $piece_size -o "${name}.torrent" -w "$url" "$file_name"
-        
-      - name: Upload torrent file
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mktorrent
+
+      - name: Download File
+        run: |
+          wget -nv -O "${{ github.event.inputs.file_name }}" "${{ github.event.inputs.download_url }}"
+
+      - name: Create Torrent File
+        run: |
+          mktorrent -v -a "udp://tracker.opentrackr.org:1337/announce" "${{ github.event.inputs.file_name }}"
+
+      - name: Upload Torrent Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.name }}
-          path: ${{ env.name }}.torrent
+          name: torrent-file
+          path: "*.torrent"
